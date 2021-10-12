@@ -130,12 +130,79 @@ Mat equalize(Mat image)
     /********************************************
                 YOUR CODE HERE
     *********************************************/
+    int cumul[256] {0};
+    for(int y = 0; y < image.rows; y++)
+    {
+        for(int x = 0; x < image.cols; x++)
+        {
+            cumul[res.at<uchar>(y, x)]++;
+        }
+    }
+    for(int i =1; i<256;i++)
+    {
+        cumul[i]+=cumul[i-1];
+    }
     
+    int size = res.rows*res.cols; 
+    for(int y = 0; y < image.rows; y++)
+        for(int x = 0; x < image.cols; x++)
+            res.at<uchar>(y, x) =  round(255.f/size*cumul[res.at<uchar>(y, x)]);
     /********************************************
                 END OF YOUR CODE
     *********************************************/
     return res;
 
+}
+
+float moyenneClasse(Mat image, uchar minClasse, uchar maxClasse){
+    int countPixelInClass = 0;
+    int somme = 0;
+    for(int y = 0; y < image.rows; y++) {
+        for(int x = 0; x < image.cols; x++) {
+            uchar pixelValue = image.at<uchar>(y, x);
+            if(pixelValue >= minClasse && pixelValue < maxClasse){
+                somme += pixelValue;
+                countPixelInClass += 1;
+            }
+        }
+    }
+    if(countPixelInClass == 0) return 0;
+    float moy = (float)somme / countPixelInClass;
+    return moy;
+}
+
+float variance(Mat image, uchar minClasse, uchar maxClasse){
+    int countPixelInClass = 0;
+    // Calcul de la moyenne
+    uchar moy = moyenneClasse(image, minClasse, maxClasse);
+    // Calcul de la variance
+    int somme = 0;
+    for(int y = 0; y < image.rows; y++) {
+        for(int x = 0; x < image.cols; x++) {
+            uchar pixelValue = image.at<uchar>(y, x);
+            if(pixelValue >= minClasse && pixelValue < maxClasse){
+                uchar ecart = (pixelValue - moy);
+                somme += ecart * ecart;
+                countPixelInClass += 1;
+            }
+        }
+    }
+    float variance = (float) somme / countPixelInClass;
+    return variance; 
+}
+
+float probaClasse(Mat image, uchar minClasse, uchar maxClasse){
+    int count = 0;
+    for(int y = 0; y < image.rows; y++) {
+        for(int x = 0; x < image.cols; x++) {
+            uchar pixelValue = image.at<uchar>(y, x);
+            if(pixelValue >= minClasse && pixelValue < maxClasse){
+                count += 1;
+            }
+        }
+    }
+    if(count == 0) return 0;
+    return (float)count / image.total();
 }
 
 /**
@@ -148,9 +215,28 @@ Mat thresholdOtsu(Mat image)
     /********************************************
                 YOUR CODE HERE
     *********************************************/
-    
+    float valMax = 0;
+    std::cout << 0 << std::endl;
+    for(uchar i=1; i < 255; i++){
+        Mat temp = res.clone();
+        //temp = threshold(temp, i, i);
+        //float varianceInf = variance(temp, 0, i);
+        //float varianceSup = variance(temp, i+1, 255);
+        float moyInf = moyenneClasse(temp, 0, i);
+        float moySup = moyenneClasse(temp, i+1, 255);
+        float probaInf = probaClasse(temp, 0, i);
+        float probaSup = probaClasse(temp, i+1, 255);
+        std::cout << "moyInf " << moyInf << " moySup " << moySup << " probaInf " << probaInf << " probaSup " << probaSup << std::endl;
+
+        //float val = (probaInf * varianceInf) + (probaSup * varianceSup);
+        float val = probaInf * probaSup * ((moyInf - moySup) * (moyInf - moySup));
+        if(val > valMax) valMax = val;
+        std::cout << val << std::endl;
+    }
+    std::cout << valMax << std::endl;
     /********************************************
                 END OF YOUR CODE
     *********************************************/
+    res = threshold(res, valMax, valMax);
     return res;
 }
