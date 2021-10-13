@@ -216,6 +216,7 @@ Mat thresholdOtsu(Mat image)
                 YOUR CODE HERE
     *********************************************/
     float valMax = 0;
+    uchar thresholdVal = 0;
     std::cout << 0 << std::endl;
     for(uchar i=1; i < 255; i++){
         Mat temp = res.clone();
@@ -226,17 +227,30 @@ Mat thresholdOtsu(Mat image)
         float moySup = moyenneClasse(temp, i+1, 255);
         float probaInf = probaClasse(temp, 0, i);
         float probaSup = probaClasse(temp, i+1, 255);
-        std::cout << "moyInf " << moyInf << " moySup " << moySup << " probaInf " << probaInf << " probaSup " << probaSup << std::endl;
+        //std::cout << "moyInf " << moyInf << " moySup " << moySup << " probaInf " << probaInf << " probaSup " << probaSup << std::endl;
 
         //float val = (probaInf * varianceInf) + (probaSup * varianceSup);
         float val = probaInf * probaSup * ((moyInf - moySup) * (moyInf - moySup));
-        if(val > valMax) valMax = val;
-        std::cout << val << std::endl;
+        if(val > valMax) {
+            thresholdVal = i;
+            valMax = val;
+        }
+        //std::cout << val << std::endl;
     }
-    std::cout << valMax << std::endl;
+    //std::cout << valMax << std::endl;
+    std::cout << (int)thresholdVal << std::endl;
     /********************************************
                 END OF YOUR CODE
     *********************************************/
-    res = threshold(res, valMax, valMax);
+    //res = threshold(res, thresholdVal, thresholdVal);
+    for(int y = 0; y < res.rows; y++) {
+        for(int x = 0; x < res.cols; x++) {
+                if(res.at<uchar>(y, x) <= thresholdVal){
+                    res.at<uchar>(y, x) = 0;
+                } else if (res.at<uchar>(y, x) >= thresholdVal) {
+                    res.at<uchar>(y, x) = 255;
+                }
+        }
+    }
     return res;
 }
